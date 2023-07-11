@@ -79,17 +79,20 @@ dependencies {
     // Lifecycle
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
 
-    // Room libraries
-    implementation 'androidx.room:room-runtime:2.4.2'
-    ksp 'androidx.room:room-compiler:2.4.2'
+    // Room libraries (not used)
+//    implementation 'androidx.room:room-runtime:2.4.2'
+//    ksp 'androidx.room:room-compiler:2.4.2'
     // optional - Kotlin Extensions and Coroutines support for Room
-    implementation 'androidx.room:room-ktx:2.4.2'
+//    implementation 'androidx.room:room-ktx:2.4.2'
+
+    // DataStore
+    implementation 'androidx.datastore:datastore-preferences:1.0.0'
 
     // Paging
     implementation 'androidx.paging:paging-runtime:3.1.1'
     implementation 'androidx.paging:paging-compose:3.2.0-rc01'
 
-    //
+    // ML Kit
     implementation 'com.google.mlkit:language-id:17.0.4'
 
     // Firebase BoM

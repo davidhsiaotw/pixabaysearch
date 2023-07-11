@@ -34,6 +34,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,14 +92,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigValue>) {
     val apiKey = BuildConfig.API_KEY
+    val dataStore = StoreSearchHistory(LocalContext.current)
     var text by rememberSaveable { mutableStateOf("") }
     var active by rememberSaveable { mutableStateOf(false) }
     var display by rememberSaveable { mutableStateOf("List") }
-    val history by rememberSaveable { mutableStateOf(mutableSetOf<String>()) }
+    val history by rememberSaveable { mutableStateOf(linkedSetOf<String>()) }
     val photos: List<Photo> by viewModel.photos.observeAsState(initial = emptyList())
 //    val test = viewModel.test.collectAsLazyPagingItems()
 
-    if(map.isNotEmpty())    {
+    if (map.isNotEmpty()) {
         display = map["display"]!!.asString()
         Log.d("MainScreen", "RemoteConfig{display, $display}")
     }
@@ -112,6 +115,15 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
             )
         }
     }
+    // import search history from datastore
+    val localHistory = dataStore.getHistory.collectAsState(initial = "").value.split(",")
+    localHistory.forEach {
+        if (it != "") {
+            history.add(it)
+        }
+    }
+
+    Log.d("MainScreen", "History: ${history.size}")
 
     Log.d("MainScreen", "There are ${photos.size} photos")
     Scaffold {
@@ -124,7 +136,13 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
 //                    Log.d("MainScreen", "Searching $text...")
                 },
                 onSearch = {
-                    history.add(it)
+                    if(it.isNotBlank()){
+                        val historyString = updateHistory(it, history)
+                        Log.d("MainScreen", "History: $historyString")
+                        coroutineScope.launch {
+                            dataStore.saveHistory(historyString)
+                        }
+                    }
                     active = false
                     var language = "en"
                     // identify input text's language
@@ -174,19 +192,19 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                     }
                 }
             ) {
-                history.forEach {
+                for (i in history.size - 1 downTo 0) {
                     Row(modifier = Modifier
                         .padding(12.dp)
                         .fillMaxWidth()
                         .clickable {
-                            text = it
+                            text = history.elementAt(i)
                         }) {
                         Icon(
                             imageVector = Icons.Default.History,
                             contentDescription = "History Icon",
                             modifier = Modifier.padding(end = 12.dp)
                         )
-                        Text(text = it)
+                        Text(text = history.elementAt(i))
                     }
                 }
             }
@@ -263,6 +281,14 @@ fun Photos(display: String, photos: List<Photo>) {
             }
         }
     }
+}
+
+private fun updateHistory(keyword: String, history: LinkedHashSet<String>): String {
+    if (history.contains(keyword)) {
+        history.remove(keyword)
+    }
+    history.add(keyword)
+    return history.joinToString(",")
 }
 
 @Preview(showBackground = true)
