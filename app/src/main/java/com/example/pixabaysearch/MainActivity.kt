@@ -44,14 +44,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.paging.compose.collectAsLazyPagingItems
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.example.pixabaysearch.ui.theme.PixabaySearchTheme
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue
+import com.google.firebase.remoteconfig.ktx.remoteConfig
+import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import com.google.mlkit.nl.languageid.LanguageIdentification
 import kotlinx.coroutines.launch
 
@@ -60,39 +63,58 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val remoteConfig: FirebaseRemoteConfig = Firebase.remoteConfig
+        val configSettings = remoteConfigSettings {
+            minimumFetchIntervalInSeconds = 3600
+        }
+        remoteConfig.setConfigSettingsAsync(configSettings)
+
+        remoteConfig.fetchAndActivate().addOnCompleteListener {
+            if (it.isSuccessful) {
+                Log.d("MainActivity", "Fetch Remote Config succeeded")
+            } else {
+                Log.d("MainActivity", "Fetch Remote Config failed")
+            }
+        }
+
         setContent {
             PixabaySearchTheme {
-                MainScreen(photoViewModel)
+                MainScreen(photoViewModel, remoteConfig.all)
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun MainScreen(viewModel: PhotoViewModel) {
-//    val apiKey = BuildConfig.API_KEY
+fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigValue>) {
+    val apiKey = BuildConfig.API_KEY
     var text by rememberSaveable { mutableStateOf("") }
     var active by rememberSaveable { mutableStateOf(false) }
     var display by rememberSaveable { mutableStateOf("List") }
-    var history by rememberSaveable { mutableStateOf(mutableSetOf<String>()) }
+    val history by rememberSaveable { mutableStateOf(mutableSetOf<String>()) }
     val photos: List<Photo> by viewModel.photos.observeAsState(initial = emptyList())
 //    val test = viewModel.test.collectAsLazyPagingItems()
+
+    if(map.isNotEmpty())    {
+        display = map["display"]!!.asString()
+        Log.d("MainScreen", "RemoteConfig{display, $display}")
+    }
 
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             viewModel.searchPhotos(
                 mapOf(
-                    "key" to BuildConfig.API_KEY, "q" to "", "lang" to "en", "page" to 1
+                    "key" to apiKey, "q" to "", "lang" to "en", "page" to 1
                 )
             )
         }
     }
 
     Log.d("MainScreen", "There are ${photos.size} photos")
-    Scaffold() {
+    Scaffold {
         Column(modifier = Modifier.fillMaxSize()) {
             SearchBar(
                 modifier = Modifier.fillMaxWidth(),
@@ -121,7 +143,7 @@ fun MainScreen(viewModel: PhotoViewModel) {
                     coroutineScope.launch {
                         viewModel.searchPhotos(
                             mapOf(
-                                "key" to BuildConfig.API_KEY,
+                                "key" to apiKey,
                                 "q" to text,
                                 "lang" to language,
                                 "page" to 1
@@ -247,6 +269,6 @@ fun Photos(display: String, photos: List<Photo>) {
 @Composable
 fun SearchPreview() {
     PixabaySearchTheme {
-        MainScreen(PhotoViewModel())
+        MainScreen(PhotoViewModel(), mapOf())
     }
 }
