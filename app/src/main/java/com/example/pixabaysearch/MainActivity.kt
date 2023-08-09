@@ -49,6 +49,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LiveData
+import androidx.paging.PagingData
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.map
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.example.pixabaysearch.ui.theme.PixabaySearchTheme
@@ -58,6 +62,8 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import com.google.mlkit.nl.languageid.LanguageIdentification
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -96,12 +102,14 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
     var text by rememberSaveable { mutableStateOf("") }
     var active by rememberSaveable { mutableStateOf(false) }
     var display by rememberSaveable { mutableStateOf("List") }
+    var remoteConfigDetect by rememberSaveable { mutableStateOf(0) }
     val history by rememberSaveable { mutableStateOf(linkedSetOf<String>()) }
     val photos: List<Photo> by viewModel.photos.observeAsState(initial = emptyList())
-//    val test = viewModel.test.collectAsLazyPagingItems()
+//    val test: PagingData<Photo> by viewModel.test.observeAsState(initial = PagingData.empty())
 
-    if (map.isNotEmpty()) {
+    if (map.isNotEmpty() && remoteConfigDetect == 0) {
         display = map["display"]!!.asString()
+        remoteConfigDetect += 1
         Log.d("MainScreen", "RemoteConfig{display, $display}")
     }
 
@@ -113,6 +121,11 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                     "key" to apiKey, "q" to "", "lang" to "en", "page" to 1
                 )
             )
+//            viewModel.testPhotos(
+//                mapOf(
+//                    "key" to apiKey, "q" to "", "lang" to "en", "page" to 1
+//                )
+//            )
         }
     }
     // import search history from datastore
@@ -136,7 +149,7 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
 //                    Log.d("MainScreen", "Searching $text...")
                 },
                 onSearch = {
-                    if(it.isNotBlank()){
+                    if (it.isNotBlank()) {
                         val historyString = updateHistory(it, history)
                         Log.d("MainScreen", "History: $historyString")
                         coroutineScope.launch {
@@ -223,6 +236,30 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                 Text(text = display)
             }
 
+//            LazyVerticalGrid(
+//                columns = GridCells.Adaptive(120.dp),
+//                contentPadding = PaddingValues(6.dp)
+//            ) {
+//                test.map {  }
+//                items(count = test.value) {
+//
+//                    Card(
+//                        Modifier
+//                            .padding(6.dp)
+//                            .aspectRatio(1F),
+//                        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+//                    ) {
+//                        GlideImage(
+//                            model = testPhotos[it]?.webformatUrl,
+//                            modifier = Modifier
+//                                .fillMaxSize()
+//                                .align(Alignment.CenterHorizontally),
+//                            contentDescription = "Photo",
+//                            contentScale = ContentScale.Crop
+//                        )
+//                    }
+//                }
+//            }
             Photos(display = display, photos)
 
         }
