@@ -33,7 +33,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -49,7 +48,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.LiveData
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.map
@@ -62,8 +60,6 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import com.google.mlkit.nl.languageid.LanguageIdentification
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -114,20 +110,7 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
     }
 
     val coroutineScope = rememberCoroutineScope()
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            viewModel.searchPhotos(
-                mapOf(
-                    "key" to apiKey, "q" to "", "lang" to "en", "page" to 1
-                )
-            )
-//            viewModel.testPhotos(
-//                mapOf(
-//                    "key" to apiKey, "q" to "", "lang" to "en", "page" to 1
-//                )
-//            )
-        }
-    }
+
     // import search history from datastore
     val localHistory = dataStore.getHistory.collectAsState(initial = "").value.split(",")
     localHistory.forEach {
