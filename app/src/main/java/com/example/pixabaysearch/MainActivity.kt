@@ -111,16 +111,6 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
 
     val coroutineScope = rememberCoroutineScope()
 
-    // import search history from datastore
-    val localHistory = dataStore.getHistory.collectAsState(initial = "").value.split(",")
-    localHistory.forEach {
-        if (it != "") {
-            history.add(it)
-        }
-    }
-
-    Log.d("MainScreen", "History: ${history.size}")
-
     Log.d("MainScreen", "There are ${photos.size} photos")
     Scaffold {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -157,10 +147,7 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                     coroutineScope.launch {
                         viewModel.searchPhotos(
                             mapOf(
-                                "key" to apiKey,
-                                "q" to text,
-                                "lang" to language,
-                                "page" to 1
+                                "key" to apiKey, "q" to text, "lang" to language, "page" to 1
                             )
                         )
                     }
@@ -188,6 +175,16 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                     }
                 }
             ) {
+                // import search history from datastore
+                val localHistory =
+                    dataStore.getHistory.collectAsState(initial = "").value.split(",")
+                localHistory.forEach {
+                    if (it != "") {
+                        history.add(it)
+                    }
+                }
+                Log.d("MainScreen", "History: ${history.size}")
+
                 for (i in history.size - 1 downTo 0) {
                     Row(modifier = Modifier
                         .padding(12.dp)
@@ -205,19 +202,17 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                 }
             }
 
-            FilledTonalButton(
-                onClick = {
+            LayoutButton(
+                modifier = Modifier
+                    .padding(6.dp)
+                    .align(Alignment.End), onClick = {
                     if (display == "List") {
                         display = "Grid"
                     } else if (display == "Grid") {
                         display = "List"
                     }
-                }, modifier = Modifier
-                    .padding(6.dp)
-                    .align(Alignment.End)
-            ) {
-                Text(text = display)
-            }
+                }, display = display
+            )
 
 //            LazyVerticalGrid(
 //                columns = GridCells.Adaptive(120.dp),
@@ -246,6 +241,13 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
             Photos(display = display, photos)
 
         }
+    }
+}
+
+@Composable
+fun LayoutButton(modifier: Modifier, onClick: () -> Unit, display: String) {
+    FilledTonalButton(onClick = onClick, modifier = modifier) {
+        Text(text = display)
     }
 }
 
