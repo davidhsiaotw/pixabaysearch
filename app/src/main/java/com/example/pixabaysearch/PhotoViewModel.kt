@@ -16,48 +16,33 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class PhotoViewModel() : ViewModel() {
-    private val _photos = MutableLiveData<MutableList<Photo>>()
-    val photos: LiveData<MutableList<Photo>> = _photos
-
-    private var _test = MutableLiveData<PagingData<Photo>>()
-    val test: LiveData<PagingData<Photo>> = _test
+    private val _photos = MutableLiveData<List<Photo>>()
+    val photos: LiveData<List<Photo>> = _photos
 
     private val _status = MutableLiveData<String>()
     val status: LiveData<String> = _status
 
-    init {
-        viewModelScope.launch {
-            searchPhotos(
-                mapOf(
-                    "key" to BuildConfig.API_KEY, "q" to "", "lang" to "en", "page" to 1
-                )
-            )
-        }
-    }
+//    init {
+//        viewModelScope.launch {
+//            searchPhotos(
+//                mapOf("key" to BuildConfig.API_KEY, "q" to "")
+//            )
+//        }
+//    }
 
     suspend fun searchPhotos(query: Map<String, Any?>) {
         try {
             _status.value = "Loading"
-            val currentPhotos = withContext(Dispatchers.IO) {
-                val call = PixabayApi.retrofitService.getPhotos(
-                    query["key"] as String, query["q"] as String,
-                    query["lang"] as String, query["page"] as Int
+            val currentPhotos = withContext(Dispatchers.Default) {
+                val response = PixabayApi.retrofitService.getPhotos(
+                    key = query["key"] as String, keyword = query["q"] as String,
+                    language = query["lang"] as String?, page = query["page"] as Int?
                 )
 
-                val response = call.execute()
+                Log.d("SearchPhotos", "${response.body()?.photos?.size}")
+
                 if (response.isSuccessful) {
-                    val result = response.body()?.get("hits") as List<*>
-                    val photos = mutableListOf<Photo>()
-                    for (item in result) {
-                        val json = item as Map<*, *>
-                        val p = Photo(
-                            json["id"] as Double, json["webformatURL"] as String,
-                            json["tags"] as String, json["userImageURL"] as String,
-                            json["webformatWidth"] as Double, json["webformatHeight"] as Double,
-                        )
-                        photos.add(p)
-                    }
-                    photos
+                    response.body()?.photos?: listOf()
                 } else {
                     _status.value = "Error"
                     throw Exception("Network request failed with code: ${response.code()}")
@@ -73,12 +58,10 @@ class PhotoViewModel() : ViewModel() {
 
     }
 
-    @Deprecated("not completed", ReplaceWith("searchPhotos()"))
-    fun testPhotos(query: Map<String, Any>) {
-        _test = Pager(
-            config = PagingConfig(
-                pageSize = 100, enablePlaceholders = false, initialLoadSize = 100
-            ), pagingSourceFactory = { PhotosPagingSource(query, PixabayApi.retrofitService) }
-        ).liveData.cachedIn(viewModelScope) as MutableLiveData<PagingData<Photo>>
+    fun testPhotos(query: Map<String, Any>): Flow<PagingData<Photo>> {
+        return Pager(
+            config = PagingConfig(pageSize = 100, enablePlaceholders = false, initialLoadSize = 100),
+            pagingSourceFactory = { PhotosPagingSource(query, PixabayApi.retrofitService) }
+        ).flow.cachedIn(viewModelScope)
     }
 }

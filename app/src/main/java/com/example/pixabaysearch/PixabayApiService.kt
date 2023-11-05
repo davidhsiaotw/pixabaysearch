@@ -2,7 +2,7 @@ package com.example.pixabaysearch
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import retrofit2.Call
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
@@ -17,11 +17,11 @@ private val retrofit = Retrofit.Builder().addConverterFactory(
 interface PixabayApiService {
 
     @GET("api/")
-    fun getPhotos(
-        @Query("key") key: String, @Query("q") keyword: String,
-        @Query("lang") language: String = "en", @Query("page") page: Int = 1,
-        @Query("per_page") perPage: Int = 100,
-    ): Call<Map<String, Any>>
+    suspend fun getPhotos(
+        @Query("key") key: String, @Query("q") keyword: String = "",
+        @Query("lang") language: String? = "en", @Query("page") page: Int? = 1,
+        @Query("per_page") perPage: Int? = 200,
+    ): Response<Pixabay>
 }
 
 object PixabayApi {

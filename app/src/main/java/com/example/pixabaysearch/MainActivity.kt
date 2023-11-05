@@ -48,9 +48,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.map
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.example.pixabaysearch.ui.theme.PixabaySearchTheme
@@ -100,8 +99,11 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
     var display by rememberSaveable { mutableStateOf("List") }
     var remoteConfigDetect by rememberSaveable { mutableStateOf(0) }
     val history by rememberSaveable { mutableStateOf(linkedSetOf<String>()) }
-    val photos: List<Photo> by viewModel.photos.observeAsState(initial = emptyList())
-//    val test: PagingData<Photo> by viewModel.test.observeAsState(initial = PagingData.empty())
+//    val photos: List<Photo> by viewModel.photos.observeAsState(initial = emptyList())
+    var queryMap by rememberSaveable {
+        mutableStateOf(mapOf("key" to apiKey, "q" to "", "lang" to "en"))
+    }
+    val photos = viewModel.testPhotos(queryMap).collectAsLazyPagingItems()
 
     if (map.isNotEmpty() && remoteConfigDetect == 0) {
         display = map["display"]!!.asString()
@@ -111,7 +113,6 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
 
     val coroutineScope = rememberCoroutineScope()
 
-    Log.d("MainScreen", "There are ${photos.size} photos")
     Scaffold {
         Column(modifier = Modifier.fillMaxSize()) {
             SearchBar(
@@ -145,11 +146,13 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                         }
                     // search for photos
                     coroutineScope.launch {
-                        viewModel.searchPhotos(
-                            mapOf(
-                                "key" to apiKey, "q" to text, "lang" to language, "page" to 1
-                            )
-                        )
+                        queryMap = mapOf("key" to apiKey, "q" to text, "lang" to language)
+                        viewModel.testPhotos(queryMap)
+//                        viewModel.searchPhotos(
+//                            mapOf(
+//                                "key" to apiKey, "q" to text, "lang" to language, "page" to 1
+//                            )
+//                        )
                     }
                 },
                 active = active,
@@ -214,31 +217,8 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                 }, display = display
             )
 
-//            LazyVerticalGrid(
-//                columns = GridCells.Adaptive(120.dp),
-//                contentPadding = PaddingValues(6.dp)
-//            ) {
-//                test.map {  }
-//                items(count = test.value) {
-//
-//                    Card(
-//                        Modifier
-//                            .padding(6.dp)
-//                            .aspectRatio(1F),
-//                        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-//                    ) {
-//                        GlideImage(
-//                            model = testPhotos[it]?.webformatUrl,
-//                            modifier = Modifier
-//                                .fillMaxSize()
-//                                .align(Alignment.CenterHorizontally),
-//                            contentDescription = "Photo",
-//                            contentScale = ContentScale.Crop
-//                        )
-//                    }
-//                }
-//            }
             Photos(display = display, photos)
+//            Photos(display = display, photos = photos)
 
         }
     }
@@ -253,9 +233,10 @@ fun LayoutButton(modifier: Modifier, onClick: () -> Unit, display: String) {
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun Photos(display: String, photos: List<Photo>) {
+fun Photos(display: String, photos: LazyPagingItems<Photo>) {
+//fun Photos(display: String, photos: List<Photo>) {
     // photos is empty before successfully connecting to API,
-    if (photos.isEmpty()) {
+    if (photos.itemCount == 0) {
         Row(modifier = Modifier.fillMaxSize()) {
             Text(text = "No Results Found", fontSize = 24.sp)
         }
@@ -265,41 +246,74 @@ fun Photos(display: String, photos: List<Photo>) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(120.dp), contentPadding = PaddingValues(6.dp)
         ) {
-            items(photos) {
-                Card(
-                    Modifier
-                        .padding(6.dp)
-                        .aspectRatio(1F),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-                ) {
-                    GlideImage(
-                        model = it.webformatUrl,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .align(Alignment.CenterHorizontally),
-                        contentDescription = "Photo",
-                        contentScale = ContentScale.Crop
-                    )
+//            items(photos) {
+//                Card(
+//                    Modifier
+//                        .padding(6.dp)
+//                        .aspectRatio(1F),
+//                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+//                ) {
+//                    GlideImage(
+//                        model = it.webformatUrl,
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                            .align(Alignment.CenterHorizontally),
+//                        contentDescription = "Photo",
+//                        contentScale = ContentScale.Crop
+//                    )
+//                }
+//            }
+            items(photos.itemCount) { i ->
+                photos[i]?.let {
+                    Card(
+                        Modifier
+                            .padding(6.dp)
+                            .aspectRatio(1F),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                    ) {
+                        GlideImage(
+                            model = it.webformatUrl,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .align(Alignment.CenterHorizontally),
+                            contentDescription = "Photo",
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
-
             }
         }
     } else if (display == "List") {
         LazyColumn {
-            items(photos) {
-                Card(
-                    Modifier
-                        .padding(6.dp)
-                        .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-                ) {
-                    GlideImage(
-                        model = it.webformatUrl,
-                        modifier = Modifier.size(120.dp),
-                        contentDescription = "Photo"
-                    )
+//            items(photos) {
+//                Card(
+//                    Modifier
+//                        .padding(6.dp)
+//                        .fillMaxWidth(),
+//                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+//                ) {
+//                    GlideImage(
+//                        model = it.webformatUrl,
+//                        modifier = Modifier.size(120.dp),
+//                        contentDescription = "Photo"
+//                    )
+//                }
+//            }
+            items(photos.itemCount) { i ->
+                photos[i]?.let {
+                    Card(
+                        Modifier
+                            .padding(6.dp)
+                            .fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                    ) {
+                        GlideImage(
+                            model = it.webformatUrl,
+                            modifier = Modifier.size(120.dp),
+                            contentDescription = "Photo"
+                        )
+                    }
                 }
-
             }
         }
     }

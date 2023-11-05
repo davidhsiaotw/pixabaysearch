@@ -1,7 +1,10 @@
 package com.example.pixabaysearch
 
+import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class PhotosPagingSource(
     private val query: Map<String, Any>,
@@ -15,36 +18,33 @@ class PhotosPagingSource(
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Photo> {
-        val page = params.key ?: 1
-        return try {
-            val response = pixabayApiService.getPhotos(
-                query["key"] as String, query["q"] as String,
-                query["lang"] as String, page
-            ).execute()
+        val startKey = params.key ?: 1
+        val pageSize = params.loadSize
+        val page = startKey / params.loadSize + 1
+
+        try {
+            val response = withContext(Dispatchers.Default) {
+                pixabayApiService.getPhotos(
+                    query["key"] as String, keyword = query["q"] as String,
+                    query["lang"] as String?, page = page, perPage = pageSize
+                )
+            }
 
             if (response.isSuccessful) {
-                val result = response.body()?.get("hits") as List<*>
-                val photos = mutableListOf<Photo>()
-                for (item in result) {
-                    val json = item as Map<*, *>
-                    val p = Photo(
-                        json["id"] as Double, json["webformatURL"] as String,
-                        json["tags"] as String, json["userImageURL"] as String,
-                        json["webformatWidth"] as Double, json["webformatHeight"] as Double,
-                    )
-                    photos.add(p)
-                }
+                val photos = response.body()?.photos ?: listOf()
 
-                LoadResult.Page(
+                return LoadResult.Page(
                     data = photos,
-                    prevKey = if (page == 1) null else page - 1,
-                    nextKey = if (photos.isNotEmpty()) page + 1 else null
+                    prevKey = if (page == 1) null else startKey - 1,
+                    nextKey = startKey + pageSize
                 )
             } else {
-                LoadResult.Error(Exception("Network request failed with code: ${response.code()}"))
+                Log.e("PhotosPagingSource.load", "api response: ${response.code()}")
+                return LoadResult.Error(Exception("Network request failed with code: ${response.code()}"))
             }
         } catch (e: Exception) {
-            LoadResult.Error(e)
+            Log.e("PhotosPagingSource.load", e.message ?: "paging load error")
+            return LoadResult.Error(e)
         }
     }
 
