@@ -131,23 +131,23 @@ fun MainScreen(viewModel: PhotoViewModel, map: Map<String, FirebaseRemoteConfigV
                         }
                     }
                     active = false
-                    var language = "en"
-                    // identify input text's language
-                    LanguageIdentification.getClient().identifyLanguage(it)
-                        .addOnSuccessListener { languageCode ->
-                            if (languageCode == "und") {
-                                Log.d("DetectLanguage", "Can't identify language.")
-                            } else {
-                                Log.d("DetectLanguage", "Language: $languageCode")
-                                language = languageCode
-                            }
-                        }.addOnFailureListener { e ->
-                            Log.d("DetectLanguage", "$e")
-                        }
                     // search for photos
                     coroutineScope.launch {
-                        queryMap = mapOf("key" to apiKey, "q" to text, "lang" to language)
-                        viewModel.testPhotos(queryMap)
+                        var language = "en"
+                        // identify input text's language
+                        LanguageIdentification.getClient().identifyLanguage(it)
+                            .addOnSuccessListener { languageCode ->
+                                if (languageCode == "und") {
+                                    Log.d("DetectLanguage", "Can't identify language.")
+                                } else {
+                                    Log.d("DetectLanguage", "Language: $languageCode")
+                                    language = languageCode
+                                }
+                                queryMap = mapOf("key" to apiKey, "q" to text, "lang" to language)
+                                viewModel.testPhotos(queryMap)
+                            }.addOnFailureListener { e ->
+                                Log.d("DetectLanguage", "$e")
+                            }
 //                        viewModel.searchPhotos(
 //                            mapOf(
 //                                "key" to apiKey, "q" to text, "lang" to language, "page" to 1
