@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "821835942448",
+    "project_id": "pixabay-search",
+    "storage_bucket": "pixabay-search.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:821835942448:android:dbc774b1ce78216bbf7bf5",
+        "android_client_info": {
+          "package_name": "com.example.pixabaysearch"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "821835942448-k4pq8l2muhqluh5aqm77vt27liqes97g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQxzwJ6AJ9Vsk1y0w-C4UyJLOwKMu3AwA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "821835942448-k4pq8l2muhqluh5aqm77vt27liqes97g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
