@@ -10,7 +10,7 @@ Pixabay Search
 <img src="https://github.com/davidhsiaotw/pixabaysearch/assets/71328511/74baebd3-f4df-4baf-933c-4b4a780bb3b2" height="500" />
 <img src="https://github.com/davidhsiaotw/pixabaysearch/assets/71328511/763ec924-e98e-4196-8e20-59dcda7023e1" height="500" />
 
-[demo video link](https://clipchamp.com/watch/6rW27si6uVK)
+[demo video link](demo%20video%20for%20Pixabay%20Search.mp4)
 
 # Development Environment
 **Pixabay Search** uses the Gradle build system and can be imported directly into Android Studio. It requires at least the Electric Eel version of [Android Studio](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility). To run the app, you have to sign up for a [Pixabay account](https://pixabay.com/accounts/login/?next=/api/docs/) to get API key, then add ```API_KEY=YOUR_API_KEY``` to your local.properties and use your API key to replace ```YOUR_API_KEY```.
